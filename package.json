@@ -1,0 +1,47 @@
+{
+  "name": "superplane-elastic-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "dev": "tsx watch apps/orchestrator/src/index.ts",
+    "start": "node dist/apps/orchestrator/src/index.js",
+    "demo-service": "tsx apps/demo-service/src/index.ts",
+    "demo:break": "tsx scripts/set-demo-mode.ts broken",
+    "demo:restore": "tsx scripts/set-demo-mode.ts healthy",
+    "elastic:create": "tsx scripts/create-elastic-index.ts",
+    "elastic:seed": "tsx scripts/seed-elastic.ts",
+    "discord:register": "tsx scripts/register-discord-commands.ts"
+  },
+  "dependencies": {
+    "@elastic/elasticsearch": "^9.5.0",
+    "@octokit/rest": "^22.0.1",
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "openai": "^7.4.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.8.1",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.10"
+  }
+}

@@ -1,0 +1,65 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Simulated production deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Simulated production startup
+        env:
+          PAYMENT_TIMEOUT_MS: "1500"
+          DEMO_SERVICE_PORT: "3100"
+        run: |
+          npm run demo-service > /tmp/demo-service.log 2>&1 &
+          echo $! > /tmp/demo-service.pid
+          sleep 2
+          if ! kill -0 "$(cat /tmp/demo-service.pid)" 2>/dev/null; then
+            echo "Application failed during simulated production startup."
+            cat /tmp/demo-service.log
+            exit 1
+          fi
+
+      - name: Health check
+        run: curl --fail --silent --show-error http://127.0.0.1:3100/health
+
+      - name: Checkout smoke test
+        run: |
+          RESPONSE=$(curl --fail --silent --show-error \
+            -H 'content-type: application/json' \
+            -d '{"orderId":"demo-order"}' \
+            http://127.0.0.1:3100/checkout)
+          echo "$RESPONSE"
+          node -e 'const r=JSON.parse(process.argv[1]); if(r.status!=="approved" || r.paymentTimeoutMs!==1500) process.exit(1)' "$RESPONSE"
+
+      - name: Stop simulated service
+        if: always()
+        run: |
+          if [ -f /tmp/demo-service.pid ]; then kill "$(cat /tmp/demo-service.pid)" 2>/dev/null || true; fi
+          cat /tmp/demo-service.log 2>/dev/null || true
