@@ -7,13 +7,14 @@ A small orchestration demo connecting Discord, Elasticsearch, OpenRouter, GitHub
 ```text
 Discord question → SuperPlane orchestrator → Elasticsearch → OpenRouter → sourced Discord answer
 
-GitHub failure → SuperPlane orchestrator → GitHub logs + Elasticsearch → OpenRouter
-               → Discord incident → /fix-latest approval → GitHub pull request → CI result
+GitHub failure → Discord alert → SuperPlane investigation → GitHub logs + Elasticsearch
+               → remediation plan → /remediation → Approve or Stop
+               → approved change → GitHub pull request → CI result
 ```
 
 Workflow A supports a bot mention such as `@superplane why did checkout fail?` and `/ask question:...`. The model receives only the retrieved Elasticsearch context and must say when that context is insufficient. Responses list their source titles.
 
-Workflow B receives a signed `workflow_run` webhook, collects failed jobs and bounded log excerpts, retrieves related knowledge, and posts a structured incident. It stores the incident in memory but cannot change code until a person runs `/fix-latest`. The generated change is limited to TypeScript files under `apps/demo-service/src/`, is committed to a new branch, and is opened as an unmerged PR.
+Workflow B receives a signed `workflow_run` webhook and immediately alerts Discord that investigation has started. It then collects failed jobs and bounded log excerpts, retrieves related knowledge, and posts a structured incident with observed facts, inferred root cause, evidence, and a remediation plan. A person runs `/remediation` (or the backward-compatible `/fix-latest`) and must click **Approve and create PR** before any repository change occurs. Clicking **Stop — no changes** records the decision and creates no branch, commit, or PR. Approved changes are limited to TypeScript files under `apps/demo-service/src/` and are opened as an unmerged PR.
 
 ## Architecture
 
@@ -109,6 +110,8 @@ npm run discord:register
 
 Guild commands normally appear quickly. The bot never uses `@everyone` and suppresses automatic broad mentions.
 
+The registered commands are `/ask`, `/incident`, `/remediation`, and `/fix-latest`. The last command is retained as an alias for opening the same remediation review; neither command modifies GitHub until the requesting user clicks the approval button.
+
 ## GitHub setup
 
 Create a fine-grained token scoped to this repository with:
@@ -168,12 +171,15 @@ Use a test Discord server and a disposable demo repository branch. The default r
    ```
 
 4. Open the **Deploy Production** run. Install, build, and unit tests pass. The **Simulated production startup** step fails because production provides only `PAYMENT_TIMEOUT_MS=1500`, while the changed application reads `PAYMENT_TIMEOUT`. The log includes `CONFIGURATION_ERROR: PAYMENT_TIMEOUT_MS is required for production checkout startup`.
-5. GitHub sends the signed `workflow_run` webhook. Watch Discord receive the red deployment incident.
-6. Show the observed failed step, grounded evidence, inferred root cause, confidence, and suggested action. No branch or code change exists yet.
+5. GitHub sends the signed `workflow_run` webhook. Watch Discord first announce that investigation started, then post the grounded incident and remediation plan.
+6. Show the observed failed step, evidence, inferred root cause, confidence, affected files, and suggested action. No branch or code change exists yet.
 7. Run `/incident` to show the latest tracked incident.
-8. Run `/fix-latest`. This is the explicit human approval boundary.
-9. Open the reported `superplane/fix-<sha>` PR. Its body includes the incident, evidence, proposed fix, original workflow, and AI-generation disclosure.
-10. Watch the existing pull-request workflow pass. Discord reports the passing result; the PR remains unmerged.
+8. Run `/remediation`. Discord shows the detailed plan with **Approve and create PR** and **Stop — no changes** buttons.
+9. Click **Approve and create PR**. This is the explicit human approval boundary. The buttons are bound to the person who requested the review.
+10. Open the reported `superplane/fix-<sha>` PR. Its body includes the incident, evidence, proposed fix, original workflow, and AI-generation disclosure.
+11. Watch the existing pull-request workflow pass. Discord reports the passing result; the PR remains unmerged.
+
+To demonstrate the rejection path, click **Stop — no changes** instead. The incident is marked stopped and the orchestrator creates no code change, branch, commit, or pull request.
 
 To restore a local working tree manually at any time:
 

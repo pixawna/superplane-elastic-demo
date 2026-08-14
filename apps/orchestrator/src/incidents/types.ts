@@ -5,7 +5,14 @@ import type { WorkflowFailureContext } from "../github/workflow-logs.js";
 export interface Incident {
   id: string;
   createdAt: string;
-  status: "investigating" | "awaiting_approval" | "fixing" | "pr_created" | "resolved" | "failed";
+  status:
+    | "investigating"
+    | "awaiting_approval"
+    | "fixing"
+    | "pr_created"
+    | "resolved"
+    | "stopped"
+    | "failed";
   failure: WorkflowFailureContext;
   analysis: IncidentAnalysis;
   knowledge: KnowledgeResult[];

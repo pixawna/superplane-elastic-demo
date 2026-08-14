@@ -29,6 +29,20 @@ export class IncidentStore {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   }
 
+  findById(id: string): Incident | undefined {
+    return [...this.incidents.values()].find((incident) => incident.id === id);
+  }
+
+  stop(id: string): Incident {
+    const incident = this.findById(id);
+    if (!incident || incident.status !== "awaiting_approval") {
+      throw new Error("This remediation plan is no longer awaiting approval.");
+    }
+    incident.status = "stopped";
+    this.save(incident);
+    return incident;
+  }
+
   findByFixBranch(branch: string): Incident | undefined {
     return [...this.incidents.values()].find((incident) => incident.fixBranch === branch);
   }

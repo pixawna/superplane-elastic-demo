@@ -33,7 +33,7 @@ Use `npm run demo:break` and `npm run demo:restore` only for the documented cont
 ## Security boundaries
 
 - Verify the GitHub signature against the raw body before parsing or handling a webhook.
-- A failure may investigate and notify, but must not modify GitHub until `/fix-latest` approval.
+- A failure may alert, investigate, and propose a remediation plan, but must not modify GitHub until a user opens `/remediation` or `/fix-latest` and clicks the approval button. The stop path must create no branch, commit, or pull request.
 - AI-generated fixes may modify only allowlisted `.ts` files under `apps/demo-service/src/`. Never extend the allowlist to workflows, secrets, authentication, or orchestrator security code without an explicit product/security decision.
 - Never execute AI-proposed shell commands.
 - Never commit credentials or `.env`.

@@ -6,7 +6,11 @@ import { investigateFailure } from "./incidents/investigate.js";
 import { IncidentStore } from "./incidents/store.js";
 import { createDiscordBot } from "./discord/bot.js";
 import { askCompanyKnowledge } from "./discord/ask.js";
-import { notifyIncident, notifyWorkflowResult } from "./discord/notifications.js";
+import {
+  notifyIncident,
+  notifyInvestigationStarted,
+  notifyWorkflowResult,
+} from "./discord/notifications.js";
 import { createElasticClient } from "./elastic/client.js";
 import { createGitHubClient } from "./github/client.js";
 import {
@@ -41,7 +45,12 @@ export function createOrchestrator() {
         config.OPENROUTER_MODEL,
         question,
       ),
-    approveFix: () => approveLatestFix(fixDeps),
+    approveFix: (incidentId) => approveLatestFix(fixDeps, incidentId),
+    stopFix: (incidentId) => {
+      const incident = store.stop(incidentId);
+      logger.info("fix_stopped", { workflowRunId: incident.failure.workflowRunId });
+      return incident;
+    },
   });
   const app = express();
 
@@ -73,6 +82,8 @@ export function createOrchestrator() {
             return response.status(202).json({ duplicate: true });
           void investigateFailure(event, {
             ...fixDeps,
+            notifyStarted: (alert) =>
+              notifyInvestigationStarted(bot, config.DISCORD_ALERT_CHANNEL_ID, alert),
             notify: (incident) => notifyIncident(bot, config.DISCORD_ALERT_CHANNEL_ID, incident),
           }).catch((error) => {
             store.failProcessing(event.workflow_run.id);

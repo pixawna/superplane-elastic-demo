@@ -2,6 +2,23 @@ import type { Client } from "discord.js";
 import type { Incident } from "../incidents/types.js";
 import { logger } from "../logger.js";
 
+export interface InvestigationAlert {
+  workflowName: string;
+  workflowUrl: string;
+  branch: string;
+  commitSha: string;
+}
+
+export function formatInvestigationStarted(alert: InvestigationAlert): string {
+  return [
+    "🔴 **Deployment failed — investigation started**",
+    `**Workflow**\n[${alert.workflowName}](${alert.workflowUrl})`,
+    `**Branch / commit**\n${alert.branch} / \`${alert.commitSha.slice(0, 7)}\``,
+    "SuperPlane is collecting failed jobs and logs, retrieving related Elastic knowledge, and preparing a grounded remediation plan.",
+    "No code changes will be made without explicit approval.",
+  ].join("\n\n");
+}
+
 export function formatIncident(incident: Incident): string {
   const failed = incident.failure.failedJobs
     .flatMap((job) => job.failedSteps.map((step) => `${job.name} / ${step}`))
@@ -19,7 +36,26 @@ export function formatIncident(incident: Incident): string {
     `**Likely root cause** (${Math.round(incident.analysis.confidence * 100)}% confidence)\n${incident.analysis.likelyRootCause}`,
     `**Evidence**\n${evidence.map((item) => `• ${item}`).join("\n")}`,
     `**Suggested action**\n${incident.analysis.suggestedFix}`,
-    "Run `/fix-latest` to let SuperPlane prepare a pull request.",
+    `**Status**\n${incident.status.replaceAll("_", " ")}`,
+    "Run `/remediation` to review the proposed plan and explicitly approve or stop it.",
+  ]
+    .join("\n\n")
+    .slice(0, 1_990);
+}
+
+export function formatRemediationPlan(incident: Incident): string {
+  const evidence = incident.analysis.evidence.slice(0, 5);
+  const affectedFiles = incident.analysis.affectedFiles.slice(0, 5);
+  return [
+    "🛠️ **SuperPlane remediation plan**",
+    `**Incident**\n${incident.id}`,
+    `**Observed failure**\n${incident.analysis.summary}`,
+    `**Inferred root cause** (${Math.round(incident.analysis.confidence * 100)}% confidence)\n${incident.analysis.likelyRootCause}`,
+    `**Evidence**\n${evidence.length ? evidence.map((item) => `• ${item}`).join("\n") : "• No evidence listed"}`,
+    `**Proposed fix**\n${incident.analysis.suggestedFix}`,
+    `**Likely affected files**\n${affectedFiles.length ? affectedFiles.map((item) => `• \`${item}\``).join("\n") : "• SuperPlane will inspect the constrained demo-service allowlist"}`,
+    "**Safety boundary**\nApproval may create an unmerged pull request only. It cannot edit workflows, secrets, authentication, or orchestrator security code.",
+    "Approve this plan, or stop it without changing GitHub.",
   ]
     .join("\n\n")
     .slice(0, 1_990);
@@ -38,6 +74,19 @@ export async function notifyIncident(client: Client, channelId: string, incident
   logger.info("discord_incident_notification_sent", {
     workflowRunId: incident.failure.workflowRunId,
   });
+}
+
+export async function notifyInvestigationStarted(
+  client: Client,
+  channelId: string,
+  alert: InvestigationAlert,
+) {
+  const channel = await getAlertChannel(client, channelId);
+  await channel.send({
+    content: formatInvestigationStarted(alert),
+    allowedMentions: { parse: [] },
+  });
+  logger.info("discord_failure_alert_sent", { workflow: alert.workflowName });
 }
 
 export async function notifyWorkflowResult(

@@ -16,12 +16,31 @@ export interface InvestigationDependencies {
   elasticIndex: string;
   openRouterModel: string;
   store: IncidentStore;
+  notifyStarted: (alert: {
+    workflowName: string;
+    workflowUrl: string;
+    branch: string;
+    commitSha: string;
+  }) => Promise<void>;
   notify: (incident: Incident) => Promise<void>;
 }
 
 export async function investigateFailure(event: WorkflowRunEvent, deps: InvestigationDependencies) {
   const run = event.workflow_run;
   logger.info("deployment_failure_detected", { workflowRunId: run.id, workflow: run.name });
+  await deps
+    .notifyStarted({
+      workflowName: run.name,
+      workflowUrl: run.html_url,
+      branch: run.head_branch ?? "unknown",
+      commitSha: run.head_sha,
+    })
+    .catch((error) => {
+      logger.warn("discord_failure_alert_failed", {
+        workflowRunId: run.id,
+        error: error instanceof Error ? error.message : "unknown",
+      });
+    });
   const failure = await retrieveWorkflowFailure(deps.github, {
     owner: event.repository.owner.login,
     repository: event.repository.name,

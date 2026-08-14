@@ -17,9 +17,12 @@ export interface FixDependencies {
   store: IncidentStore;
 }
 
-export async function approveLatestFix(deps: FixDependencies) {
-  const incident = deps.store.latestUnresolved();
+export async function approveLatestFix(deps: FixDependencies, incidentId?: string) {
+  const incident = incidentId ? deps.store.findById(incidentId) : deps.store.latestUnresolved();
   if (!incident) throw new Error("There is no unresolved incident awaiting approval.");
+  if (incident.status !== "awaiting_approval") {
+    throw new Error("This remediation plan is no longer awaiting approval.");
+  }
   incident.status = "fixing";
   logger.info("fix_approved", { workflowRunId: incident.failure.workflowRunId });
 
