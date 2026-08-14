@@ -72,8 +72,6 @@ The orchestrator uses OpenRouter's OpenAI-compatible Chat Completions API. Incid
 | `ELASTIC_INFERENCE_ID`     | Optional named inference endpoint for `semantic_text`; omit to use the deployment default. |
 | `OPENROUTER_API_KEY`       | OpenRouter API key created at `openrouter.ai/settings/keys`.                               |
 | `OPENROUTER_MODEL`         | OpenRouter model slug; defaults to `openai/gpt-5.6-terra`.                                 |
-| `OPENROUTER_BASE_URL`      | OpenRouter-compatible API URL; default `https://openrouter.ai/api/v1`.                     |
-| `OPENROUTER_APP_NAME`      | App name included in optional OpenRouter attribution headers.                              |
 | `GITHUB_TOKEN`             | Fine-grained token used for logs, repository files, branches, commits, and PRs.            |
 | `GITHUB_OWNER`             | Repository owner or organization.                                                          |
 | `GITHUB_REPO`              | Repository name.                                                                           |

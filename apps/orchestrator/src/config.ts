@@ -13,8 +13,6 @@ const configSchema = z.object({
   ELASTIC_INFERENCE_ID: z.string().optional(),
   OPENROUTER_API_KEY: z.string().min(1),
   OPENROUTER_MODEL: z.string().default("openai/gpt-5.6-terra"),
-  OPENROUTER_BASE_URL: z.string().url().default("https://openrouter.ai/api/v1"),
-  OPENROUTER_APP_NAME: z.string().default("SuperPlane Elastic Demo"),
   GITHUB_TOKEN: z.string().min(1),
   GITHUB_OWNER: z.string().min(1),
   GITHUB_REPO: z.string().min(1),

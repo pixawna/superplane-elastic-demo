@@ -21,12 +21,7 @@ export function createOrchestrator() {
   const config = loadConfig();
   const github = createGitHubClient(config.GITHUB_TOKEN);
   const elastic = createElasticClient(config.ELASTICSEARCH_URL, config.ELASTIC_API_KEY);
-  const openRouter = createOpenRouterClient({
-    apiKey: config.OPENROUTER_API_KEY,
-    baseUrl: config.OPENROUTER_BASE_URL,
-    siteUrl: config.PUBLIC_BASE_URL,
-    appName: config.OPENROUTER_APP_NAME,
-  });
+  const openRouter = createOpenRouterClient({ apiKey: config.OPENROUTER_API_KEY });
   const store = new IncidentStore();
   const fixDeps = {
     github,

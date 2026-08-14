@@ -20,8 +20,6 @@ describe("orchestrator config", () => {
   it("loads OpenRouter defaults", () => {
     const config = loadConfig(baseEnv);
     expect(config.OPENROUTER_MODEL).toBe("openai/gpt-5.6-terra");
-    expect(config.OPENROUTER_BASE_URL).toBe("https://openrouter.ai/api/v1");
-    expect(config.OPENROUTER_APP_NAME).toBe("SuperPlane Elastic Demo");
   });
 
   it("does not accept the retired OpenAI key in place of an OpenRouter key", () => {
