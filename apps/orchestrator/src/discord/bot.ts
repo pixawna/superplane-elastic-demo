@@ -11,7 +11,7 @@ import {
 } from "discord.js";
 import type { Incident } from "../incidents/types.js";
 import type { IncidentStore } from "../incidents/store.js";
-import { formatIncident, formatRemediationPlan } from "./notifications.js";
+import { formatRemediationPlan } from "./notifications.js";
 
 interface BotHandlers {
   ask: (question: string) => Promise<string>;
@@ -44,7 +44,12 @@ function remediationComponents(incident: Incident, requestedBy: string) {
 
 async function showRemediation(interaction: ChatInputCommandInteraction, handlers: BotHandlers) {
   const incident = handlers.store.latestUnresolved();
-  if (!incident) throw new Error("There is no remediation plan awaiting approval.");
+  if (!incident) {
+    if (handlers.store.isProcessing()) {
+      throw new Error("Investigation is still running. Wait for the remediation plan message.");
+    }
+    throw new Error("There is no remediation plan awaiting approval.");
+  }
   await interaction.editReply({
     content: formatRemediationPlan(incident),
     components: remediationComponents(incident, interaction.user.id),
@@ -138,11 +143,6 @@ export function createDiscordBot(handlers: BotHandlers) {
       if (interaction.commandName === "ask") {
         await interaction.editReply(
           await handlers.ask(interaction.options.getString("question", true)),
-        );
-      } else if (interaction.commandName === "incident") {
-        const incident = handlers.store.latest();
-        await interaction.editReply(
-          incident ? formatIncident(incident) : "No incident is currently tracked.",
         );
       } else if (
         interaction.commandName === "remediation" ||

@@ -25,6 +25,19 @@ export interface InvestigationDependencies {
   notify: (incident: Incident) => Promise<void>;
 }
 
+export function buildFailureKnowledgeQuery(failure: {
+  workflowName: string;
+  failedJobs: Array<{ name: string; failedSteps: string[] }>;
+  importantLogs: string;
+}): string {
+  const failedSteps = failure.failedJobs.flatMap((job) => [job.name, ...job.failedSteps]);
+  const importantLines = failure.importantLogs
+    .split(/\r?\n/)
+    .filter((line) => /error|fail|missing|required|timeout|config|exception|not found/i.test(line))
+    .slice(-12);
+  return [failure.workflowName, ...failedSteps, ...importantLines].join("\n").slice(0, 800);
+}
+
 export async function investigateFailure(event: WorkflowRunEvent, deps: InvestigationDependencies) {
   const run = event.workflow_run;
   logger.info("deployment_failure_detected", { workflowRunId: run.id, workflow: run.name });
@@ -57,7 +70,7 @@ export async function investigateFailure(event: WorkflowRunEvent, deps: Investig
   const knowledge = await searchKnowledge(
     deps.elastic,
     deps.elasticIndex,
-    `${failure.workflowName} ${failure.importantLogs}`.slice(0, 4_000),
+    buildFailureKnowledgeQuery(failure),
   );
   const analysis = await analyzeFailure(deps.openRouter, deps.openRouterModel, failure, knowledge);
   const incident: Incident = {

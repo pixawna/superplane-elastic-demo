@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { excerpt, formatSearchHits } from "../src/elastic/search.js";
+import { excerpt, formatSearchHits, normalizeSearchQuery } from "../src/elastic/search.js";
 
 describe("Elasticsearch result formatting", () => {
   it("returns safe, compact source information", () => {
@@ -25,5 +25,11 @@ describe("Elasticsearch result formatting", () => {
       },
     ]);
     expect(excerpt("a".repeat(100), 20)).toHaveLength(20);
+  });
+
+  it("bounds and normalizes large log-derived search queries", () => {
+    const query = normalizeSearchQuery(`failure\n${"timeout ".repeat(500)}`, 120);
+    expect(query).toHaveLength(120);
+    expect(query).not.toContain("\n");
   });
 });

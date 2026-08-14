@@ -19,6 +19,10 @@ export class IncidentStore {
     this.processing.delete(workflowRunId);
   }
 
+  isProcessing(): boolean {
+    return this.processing.size > 0;
+  }
+
   latest(): Incident | undefined {
     return [...this.incidents.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   }

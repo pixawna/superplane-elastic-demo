@@ -8,6 +8,7 @@ import { createDiscordBot } from "./discord/bot.js";
 import { askCompanyKnowledge } from "./discord/ask.js";
 import {
   notifyIncident,
+  notifyInvestigationFailed,
   notifyInvestigationStarted,
   notifyWorkflowResult,
 } from "./discord/notifications.js";
@@ -87,9 +88,20 @@ export function createOrchestrator() {
             notify: (incident) => notifyIncident(bot, config.DISCORD_ALERT_CHANNEL_ID, incident),
           }).catch((error) => {
             store.failProcessing(event.workflow_run.id);
+            const reason = error instanceof Error ? error.message : "unknown";
             logger.error("incident_investigation_failed", {
               workflowRunId: event.workflow_run.id,
-              error: error instanceof Error ? error.message : "unknown",
+              error: reason,
+            });
+            void notifyInvestigationFailed(bot, config.DISCORD_ALERT_CHANNEL_ID, {
+              workflowRunId: event.workflow_run.id,
+              workflowUrl: event.workflow_run.html_url,
+              reason,
+            }).catch((notificationError) => {
+              logger.error("discord_investigation_failure_notification_failed", {
+                workflowRunId: event.workflow_run.id,
+                error: notificationError instanceof Error ? notificationError.message : "unknown",
+              });
             });
           });
         } else if (

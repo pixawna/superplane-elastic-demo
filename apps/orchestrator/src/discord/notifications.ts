@@ -89,6 +89,25 @@ export async function notifyInvestigationStarted(
   logger.info("discord_failure_alert_sent", { workflow: alert.workflowName });
 }
 
+export async function notifyInvestigationFailed(
+  client: Client,
+  channelId: string,
+  input: { workflowRunId: number; workflowUrl: string; reason: string },
+) {
+  const channel = await getAlertChannel(client, channelId);
+  const safeReason = input.reason.replace(/\s+/g, " ").slice(0, 500);
+  await channel.send({
+    content: [
+      "⚠️ **Investigation could not be completed**",
+      `**Workflow run**\n[${input.workflowRunId}](${input.workflowUrl})`,
+      `**Reason**\n${safeReason}`,
+      "No remediation was approved and no repository changes were made. Correct the integration error, then redeliver the failed `workflow_run` webhook.",
+    ].join("\n\n"),
+    allowedMentions: { parse: [] },
+  });
+  logger.info("discord_investigation_failure_sent", { workflowRunId: input.workflowRunId });
+}
+
 export async function notifyWorkflowResult(
   client: Client,
   channelId: string,
