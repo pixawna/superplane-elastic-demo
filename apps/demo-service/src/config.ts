@@ -13,7 +13,7 @@ const timeout = env.PAYMENT_TIMEOUT;
     throw new Error(
       "CONFIGURATION_ERROR: PAYMENT_TIMEOUT_MS is required for production checkout startup",
     );
-  }
+  
 
   return {
     paymentTimeoutMs: timeoutSchema.parse(timeout),
