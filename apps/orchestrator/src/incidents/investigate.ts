@@ -1,7 +1,7 @@
 import type { Client as ElasticClient } from "@elastic/elasticsearch";
 import type { Octokit } from "@octokit/rest";
-import OpenAI from "openai";
 import { analyzeFailure } from "../ai/analyze-failure.js";
+import type { OpenRouterClient } from "../ai/client.js";
 import { searchKnowledge } from "../elastic/search.js";
 import type { WorkflowRunEvent } from "../github/webhook.js";
 import { retrieveWorkflowFailure } from "../github/workflow-logs.js";
@@ -12,9 +12,9 @@ import type { Incident } from "./types.js";
 export interface InvestigationDependencies {
   github: Octokit;
   elastic: ElasticClient;
-  openai: OpenAI;
+  openRouter: OpenRouterClient;
   elasticIndex: string;
-  openaiModel: string;
+  openRouterModel: string;
   store: IncidentStore;
   notify: (incident: Incident) => Promise<void>;
 }
@@ -40,7 +40,7 @@ export async function investigateFailure(event: WorkflowRunEvent, deps: Investig
     deps.elasticIndex,
     `${failure.workflowName} ${failure.importantLogs}`.slice(0, 4_000),
   );
-  const analysis = await analyzeFailure(deps.openai, deps.openaiModel, failure, knowledge);
+  const analysis = await analyzeFailure(deps.openRouter, deps.openRouterModel, failure, knowledge);
   const incident: Incident = {
     id: `workflow-${run.id}`,
     createdAt: new Date().toISOString(),

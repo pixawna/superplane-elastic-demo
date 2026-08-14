@@ -3,7 +3,7 @@
 ## Architecture
 
 - `apps/demo-service`: deliberately breakable Express checkout service. Healthy code reads `PAYMENT_TIMEOUT_MS`.
-- `apps/orchestrator`: Discord, Elasticsearch, OpenAI Responses API, GitHub webhook/log, incident, and PR orchestration.
+- `apps/orchestrator`: Discord, Elasticsearch, OpenRouter Chat Completions, GitHub webhook/log, incident, and PR orchestration.
 - `knowledge`: Markdown evidence seeded into `superplane-knowledge`.
 - `scripts`: Elastic setup, Discord command registration, and guarded demo-mode switching.
 - `.github/workflows/deploy.yml`: simulated production deployment and smoke test.
@@ -25,6 +25,7 @@ Use `npm run demo:break` and `npm run demo:restore` only for the documented cont
 ## Conventions
 
 - TypeScript ESM with `.js` import suffixes, strict types, small functions, and Zod at external boundaries.
+- Route model calls through the OpenRouter client and keep OpenRouter model slugs configurable.
 - Keep integrations injectable enough for deterministic tests.
 - Log lifecycle events as JSON; never log tokens, secrets, authorization headers, or complete unbounded external payloads.
 - Preserve the distinction between observed evidence, inferred causes, and suggested remediation.

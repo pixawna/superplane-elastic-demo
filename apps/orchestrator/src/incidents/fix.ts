@@ -1,8 +1,8 @@
 import type { Client as ElasticClient } from "@elastic/elasticsearch";
 import type { Octokit } from "@octokit/rest";
-import OpenAI from "openai";
 import { EDITABLE_FILE } from "../ai/schemas.js";
 import { generateFix } from "../ai/generate-fix.js";
+import type { OpenRouterClient } from "../ai/client.js";
 import { searchKnowledge } from "../elastic/search.js";
 import { createFixPullRequest, getRepositoryFiles } from "../github/create-pr.js";
 import { logger } from "../logger.js";
@@ -11,9 +11,9 @@ import { IncidentStore } from "./store.js";
 export interface FixDependencies {
   github: Octokit;
   elastic: ElasticClient;
-  openai: OpenAI;
+  openRouter: OpenRouterClient;
   elasticIndex: string;
-  openaiModel: string;
+  openRouterModel: string;
   store: IncidentStore;
 }
 
@@ -41,7 +41,13 @@ export async function approveLatestFix(deps: FixDependencies) {
       deps.elasticIndex,
       `${incident.analysis.likelyRootCause} ${incident.analysis.suggestedFix}`,
     );
-    const fix = await generateFix(deps.openai, deps.openaiModel, incident, files, knowledge);
+    const fix = await generateFix(
+      deps.openRouter,
+      deps.openRouterModel,
+      incident,
+      files,
+      knowledge,
+    );
     logger.info("fix_generated", { files: fix.changes.map((change) => change.path) });
     const created = await createFixPullRequest(deps.github, incident, fix);
     incident.status = "pr_created";

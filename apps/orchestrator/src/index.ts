@@ -1,6 +1,6 @@
 import express from "express";
-import OpenAI from "openai";
 import { pathToFileURL } from "node:url";
+import { createOpenRouterClient } from "./ai/client.js";
 import { approveLatestFix } from "./incidents/fix.js";
 import { investigateFailure } from "./incidents/investigate.js";
 import { IncidentStore } from "./incidents/store.js";
@@ -21,20 +21,31 @@ export function createOrchestrator() {
   const config = loadConfig();
   const github = createGitHubClient(config.GITHUB_TOKEN);
   const elastic = createElasticClient(config.ELASTICSEARCH_URL, config.ELASTIC_API_KEY);
-  const openai = new OpenAI({ apiKey: config.OPENAI_API_KEY });
+  const openRouter = createOpenRouterClient({
+    apiKey: config.OPENROUTER_API_KEY,
+    baseUrl: config.OPENROUTER_BASE_URL,
+    siteUrl: config.PUBLIC_BASE_URL,
+    appName: config.OPENROUTER_APP_NAME,
+  });
   const store = new IncidentStore();
   const fixDeps = {
     github,
     elastic,
-    openai,
+    openRouter,
     elasticIndex: config.ELASTIC_INDEX,
-    openaiModel: config.OPENAI_MODEL,
+    openRouterModel: config.OPENROUTER_MODEL,
     store,
   };
   const bot = createDiscordBot({
     store,
     ask: (question) =>
-      askCompanyKnowledge(elastic, config.ELASTIC_INDEX, openai, config.OPENAI_MODEL, question),
+      askCompanyKnowledge(
+        elastic,
+        config.ELASTIC_INDEX,
+        openRouter,
+        config.OPENROUTER_MODEL,
+        question,
+      ),
     approveFix: () => approveLatestFix(fixDeps),
   });
   const app = express();

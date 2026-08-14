@@ -1,13 +1,13 @@
 # SuperPlane + Elastic Demo
 
-A small orchestration demo connecting Discord, Elasticsearch, OpenAI, GitHub Actions, and GitHub. It answers company questions from indexed evidence and turns a failed deployment into a human-approved pull request—never an automatic code change.
+A small orchestration demo connecting Discord, Elasticsearch, OpenRouter, GitHub Actions, and GitHub. It answers company questions from indexed evidence and turns a failed deployment into a human-approved pull request—never an automatic code change.
 
 ## What this demonstrates
 
 ```text
-Discord question → SuperPlane orchestrator → Elasticsearch → OpenAI → sourced Discord answer
+Discord question → SuperPlane orchestrator → Elasticsearch → OpenRouter → sourced Discord answer
 
-GitHub failure → SuperPlane orchestrator → GitHub logs + Elasticsearch → OpenAI
+GitHub failure → SuperPlane orchestrator → GitHub logs + Elasticsearch → OpenRouter
                → Discord incident → /fix-latest approval → GitHub pull request → CI result
 ```
 
@@ -22,7 +22,7 @@ Workflow B receives a signed `workflow_run` webhook, collects failed jobs and bo
 │ Discord │ ─────────────────────────▶ │ SuperPlane Orchestrator    │
 │         │ ◀───────────────────────── │                            │
 └─────────┘       answer / incident    │  ┌──────────┐ ┌─────────┐ │
-                                      │  │ Elastic  │ │ OpenAI  │ │
+                                      │  │ Elastic  │ │OpenRouter│ │
 ┌─────────┐  workflow_run webhook     │  └────▲─────┘ └────▲────┘ │
 │ GitHub  │ ─────────────────────────▶ │       │ context     │      │
 │ Actions │                            │  ┌────┴─────────────┴───┐  │
@@ -39,12 +39,22 @@ The GitHub Actions runner is the simulated production environment. No Kubernetes
 
 - Node.js 20 or later and npm.
 - An Elasticsearch deployment that supports `semantic_text`, plus an API key allowed to manage and write `superplane-knowledge`.
-- An OpenAI API key with access to the configured model.
+- An OpenRouter account with credits and an API key allowed to use the configured model.
 - A Discord application and bot installed in a test server.
 - A GitHub repository, fine-grained token, and webhook.
 - A public HTTPS URL for the locally running webhook, typically from a tunnel such as ngrok or Cloudflare Tunnel.
 
 Credentials are only read from environment variables. Copy `.env.example` to `.env`; `.env` is ignored by Git.
+
+### OpenRouter setup
+
+1. Sign in at [OpenRouter](https://openrouter.ai/).
+2. Add credits or configure an available provider.
+3. Open [API Keys](https://openrouter.ai/settings/keys), create a key named `superplane-elastic-demo`, and copy it once.
+4. Set `OPENROUTER_API_KEY` in `.env`.
+5. Keep `OPENROUTER_MODEL=openai/gpt-5.6-terra`, or replace it with another OpenRouter model slug that supports structured outputs.
+
+The orchestrator uses OpenRouter's OpenAI-compatible Chat Completions API. Incident analysis and generated fixes request strict JSON-schema responses and still validate the returned data locally with Zod.
 
 ## Environment variables
 
@@ -60,8 +70,10 @@ Credentials are only read from environment variables. Copy `.env.example` to `.e
 | `ELASTIC_API_KEY`          | Elasticsearch API key.                                                                     |
 | `ELASTIC_INDEX`            | Knowledge index; default and required demo value is `superplane-knowledge`.                |
 | `ELASTIC_INFERENCE_ID`     | Optional named inference endpoint for `semantic_text`; omit to use the deployment default. |
-| `OPENAI_API_KEY`           | OpenAI API key.                                                                            |
-| `OPENAI_MODEL`             | Responses API model; defaults to `gpt-5.6-terra`.                                          |
+| `OPENROUTER_API_KEY`       | OpenRouter API key created at `openrouter.ai/settings/keys`.                               |
+| `OPENROUTER_MODEL`         | OpenRouter model slug; defaults to `openai/gpt-5.6-terra`.                                 |
+| `OPENROUTER_BASE_URL`      | OpenRouter-compatible API URL; default `https://openrouter.ai/api/v1`.                     |
+| `OPENROUTER_APP_NAME`      | App name included in optional OpenRouter attribution headers.                              |
 | `GITHUB_TOKEN`             | Fine-grained token used for logs, repository files, branches, commits, and PRs.            |
 | `GITHUB_OWNER`             | Repository owner or organization.                                                          |
 | `GITHUB_REPO`              | Repository name.                                                                           |
@@ -205,8 +217,9 @@ The mode script only replaces the exact guarded assignment in `apps/demo-service
 - **Branch or PR creation fails:** grant Contents and Pull requests write permission. Delete or rename an old demo fix branch before repeating the exact same failed SHA.
 - **Duplicate delivery:** the orchestrator returns an accepted duplicate response and does not reinvestigate while its in-memory state is alive.
 
-### OpenAI
+### OpenRouter
 
-- **Authentication/model error:** verify `OPENAI_API_KEY` and model access; `OPENAI_MODEL` defaults to `gpt-5.6-terra`.
+- **Authentication/model error:** verify `OPENROUTER_API_KEY`, account credits, and model access; `OPENROUTER_MODEL` defaults to `openai/gpt-5.6-terra`.
+- **Unsupported parameter error:** choose a model/provider that supports structured outputs. Incident and fix generation require JSON-schema response formatting.
 - **Structured response rejected:** inspect the concise application error and retry. Invalid analyses and disallowed changes are intentionally stopped before GitHub mutation.
 - **Question says context is insufficient:** add the missing fact to a Markdown document and rerun `npm run elastic:seed`; do not loosen the grounding prompt.
