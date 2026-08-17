@@ -8,7 +8,7 @@ export interface DemoServiceConfig {
 }
 
 export function loadDemoServiceConfig(env: NodeJS.ProcessEnv = process.env): DemoServiceConfig {
-  const timeout = env.PAYMENT_TIMEOUT_MS;
+  const timeout = env.PAYMENT_TIMEOUT;
   if (!timeout) {
     throw new Error(
       "CONFIGURATION_ERROR: PAYMENT_TIMEOUT_MS is required for production checkout startup",
