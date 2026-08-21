@@ -1,6 +1,6 @@
 # SuperPlane + Elastic Demo
 
-A small orchestration demo connecting Discord, Elasticsearch, OpenRouter, GitHub Actions, and GitHub. It answers company questions from indexed evidence and turns a failed deployment into a human-approved pull request—never an automatic code change.
+A small orchestration demo connecting Discord, Elasticsearch, OpenRouter, GitHub Actions and Superplane. It answers company questions from indexed evidence and turns a failed deployment into a human-approved pull request—never an automatic code change.
 
 ## What this demonstrates
 
